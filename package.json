@@ -1,0 +1,16 @@
+{
+  "name": "yz-auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@yzlaboratory/shh": "0.1.7",
+    "husky": "9.1.7"
+  }
+}

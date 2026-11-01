@@ -53,13 +53,16 @@ export type ClientCreation = {
   clientSecret: string | null
 }
 
-interface TenantRow {
+interface TenantBaseRow {
   id: string
   slug: string
   name: string
   status: 'active' | 'disabled'
-  signing_key_ciphertext: string
   updated_at: string
+}
+
+interface TenantRow extends TenantBaseRow {
+  signing_key_ciphertext: string
 }
 
 interface ClientRow {
@@ -108,7 +111,21 @@ export class TenantService {
     return rows.map((row) => this.mapTenant(row))
   }
 
-  async getTenant(slug: string): Promise<TenantWithSigningKey | null> {
+  async getTenant(slug: string): Promise<Tenant | null> {
+    const rows = await this.database<TenantBaseRow[]>`
+      select ${this.tenantColumns}
+      from tenants where slug = ${slug}
+    `
+
+    if (rows.length === 0) {
+      return null
+    }
+
+    const row = requiredRow(rows, 'Tenant row disappeared')
+    return this.mapTenant(row)
+  }
+
+  async getTenantWithSigningKey(slug: string): Promise<TenantWithSigningKey | null> {
     const rows = await this.database<TenantRow[]>`
       select ${this.tenantColumns}, signing_key_ciphertext
       from tenants where slug = ${slug}
@@ -203,6 +220,15 @@ export class TenantService {
     }))
   }
 
+  async getActiveClientVersion(tenantId: string): Promise<string> {
+    const rows = await this.database<{ version: string | null }[]>`
+      select string_agg(client_id || ':' || updated_at::text, ':' order by client_id) as version
+      from clients where tenant_id = ${tenantId} and status = 'active'
+    `
+
+    return rows[0]?.version ?? ''
+  }
+
   async disableClient(tenantSlug: string, clientId: string): Promise<boolean> {
     const rows = await this.database<ClientRow[]>`
       update clients set status = 'disabled', updated_at = now()
@@ -245,7 +271,7 @@ export class TenantService {
     `
   }
 
-  private mapTenant(row: TenantRow): Tenant {
+  private mapTenant(row: TenantBaseRow): Tenant {
     return {
       id: row.id,
       slug: row.slug,

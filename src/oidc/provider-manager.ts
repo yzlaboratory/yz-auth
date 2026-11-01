@@ -32,16 +32,12 @@ export class OidcProviderManager {
   ) {}
 
   async getProvider(slug: string): Promise<Provider | null> {
-    const tenant = await this.tenants.getTenant(slug)
+    const tenant = await this.tenants.getTenantWithSigningKey(slug)
     if (!tenant || tenant.status !== 'active') {
       return null
     }
 
-    const clients = await this.tenants.getClientsWithSecrets(tenant.id)
-    const version = [
-      tenant.updatedAt,
-      ...clients.flatMap((client) => [client.clientId, client.updatedAt]),
-    ].join(':')
+    const version = `${tenant.updatedAt}:${await this.tenants.getActiveClientVersion(tenant.id)}`
     const cached = this.cache.get(slug)
 
     if (cached?.version === version) {
@@ -55,8 +51,10 @@ export class OidcProviderManager {
       return pending
     }
 
-    const creation = this.createProvider(tenant, clients, version)
-      .finally(() => this.pending.delete(slug))
+    const creation = (async () => {
+      const clients = await this.tenants.getClientsWithSecrets(tenant.id)
+      return this.createProvider(tenant, clients, version)
+    })().finally(() => this.pending.delete(slug))
     this.pending.set(slug, creation)
     return creation
   }

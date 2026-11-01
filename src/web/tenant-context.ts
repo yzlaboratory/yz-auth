@@ -1,12 +1,12 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
-import type { TenantService, TenantWithSigningKey } from '../tenants/tenant-service.js'
+import type { Tenant, TenantService } from '../tenants/tenant-service.js'
 import { renderMessage } from './responses.js'
 
 export async function requireActiveTenant(
   request: FastifyRequest,
   reply: FastifyReply,
   tenants: TenantService,
-): Promise<TenantWithSigningKey | null> {
+): Promise<Tenant | null> {
   reply.header('Cache-Control', 'no-store')
   const { slug } = request.params as { slug?: string }
   const tenant = slug ? await tenants.getTenant(slug) : null

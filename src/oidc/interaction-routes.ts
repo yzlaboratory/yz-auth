@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import type Provider from 'oidc-provider'
 import type { AccountService } from '../accounts/account-service.js'
 import type { AppConfig } from '../config.js'
-import type { TenantService, TenantWithSigningKey } from '../tenants/tenant-service.js'
+import type { Tenant, TenantService } from '../tenants/tenant-service.js'
 import { hasValidCsrfToken, issueCsrfToken } from '../web/csrf.js'
 import { sensitiveRateLimit } from '../web/rate-limit.js'
 import { renderInvalidCsrf, renderMessage } from '../web/responses.js'
@@ -28,7 +28,7 @@ interface ConsentDetails {
 
 interface InteractionContext {
   provider: Provider
-  tenant: TenantWithSigningKey
+  tenant: Tenant
   details: Awaited<ReturnType<Provider['interactionDetails']>>
   clientName: string
 }
@@ -157,8 +157,8 @@ async function loadInteraction(
 
   const details = await provider.interactionDetails(request.raw, reply.raw)
   const clientId = String(details.params.client_id ?? '')
-  const registeredClients = await tenants.listClients(tenant.slug)
-  const clientName = registeredClients.find((client) => client.clientId === clientId)?.name ?? 'this application'
+  const client = clientId ? await provider.Client.find(clientId) : undefined
+  const clientName = client?.clientName ?? 'this application'
 
   return { tenant, provider, details, clientName }
 }

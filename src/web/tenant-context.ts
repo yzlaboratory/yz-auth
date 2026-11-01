@@ -7,6 +7,7 @@ export async function requireActiveTenant(
   reply: FastifyReply,
   tenants: TenantService,
 ): Promise<TenantWithSigningKey | null> {
+  reply.header('Cache-Control', 'no-store')
   const { slug } = request.params as { slug?: string }
   const tenant = slug ? await tenants.getTenant(slug) : null
 

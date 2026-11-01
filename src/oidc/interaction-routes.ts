@@ -38,7 +38,6 @@ export function registerInteractionRoutes(
       const context = await loadInteraction(request, reply, providers, tenants)
       if (!context) return
 
-      reply.header('Cache-Control', 'no-store')
       if (context.details.prompt.name === 'login') {
         return renderLogin(request, reply, context, config, null, '')
       }

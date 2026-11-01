@@ -163,10 +163,15 @@ export class AccountService {
         return false
       }
 
-      await transaction`
+      const updated = await transaction`
         update accounts set email_verified_at = coalesce(email_verified_at, now()), updated_at = now()
         where tenant_id = ${input.tenant.id} and id = ${accountId} and status = 'active'
       `
+
+      if (updated.count === 0) {
+        return false
+      }
+
       await recordAuditEvent(transaction, {
         tenantId: input.tenant.id,
         accountId,
@@ -274,8 +279,21 @@ export class AccountService {
     ipAddress: string | null
   }): Promise<boolean> {
     const password = passwordSchema.parse(input.password)
-    const passwordHash = await hashPassword(password)
     const tokenHash = hashBearerToken(input.token)
+    const tokens = await this.database<{ account_id: string }[]>`
+      select account_id from one_time_tokens
+      where tenant_id = ${input.tenant.id}
+        and kind = 'password_reset'
+        and token_hash = ${tokenHash}
+        and consumed_at is null
+        and expires_at > now()
+    `
+
+    if (tokens.length === 0) {
+      return false
+    }
+
+    const passwordHash = await hashPassword(password)
 
     return this.database.begin(async (transaction) => {
       const consumed = await transaction<{ account_id: string }[]>`

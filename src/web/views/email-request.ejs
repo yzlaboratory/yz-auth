@@ -1,0 +1,13 @@
+<%- include('head', { title, tenantName }) %>
+<h1><%= title %></h1>
+<p class="muted"><%= instructions %></p>
+<% if (message) { %><p><%= message %></p><% } %>
+<form method="post" action="<%= action %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="interaction" value="<%= interactionUid %>">
+  <label>Email
+    <input type="email" name="email" required maxlength="254" autocomplete="email">
+  </label>
+  <button type="submit"><%= buttonText %></button>
+</form>
+<%- include('foot') %>

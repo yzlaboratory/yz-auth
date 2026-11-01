@@ -1,0 +1,11 @@
+<%- include('head', { title: 'Authorize application', tenantName }) %>
+<h1>Authorize <%= clientName %></h1>
+<p><%= clientName %> is requesting access to your <%= tenantName %> identity.</p>
+<ul>
+  <% scopes.forEach((scope) => { %><li><%= scope %></li><% }) %>
+</ul>
+<form method="post" action="/t/<%= slug %>/interaction/<%= uid %>/consent">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <button type="submit">Continue</button>
+</form>
+<%- include('foot') %>

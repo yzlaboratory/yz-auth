@@ -1,0 +1,17 @@
+<%- include('head', { title: 'Create account', tenantName }) %>
+<h1>Create account</h1>
+<p class="muted">Create your account for <%= tenantName %>.</p>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<form method="post" action="/t/<%= slug %>/signup">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="interaction" value="<%= interactionUid %>">
+  <label>Email
+    <input type="email" name="email" required maxlength="254" autocomplete="email" value="<%= email %>">
+  </label>
+  <label>Password
+    <input type="password" name="password" required minlength="12" maxlength="128" autocomplete="new-password">
+  </label>
+  <p class="muted">Use at least 12 characters.</p>
+  <button type="submit">Create account</button>
+</form>
+<%- include('foot') %>

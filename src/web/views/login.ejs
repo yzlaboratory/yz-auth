@@ -1,0 +1,20 @@
+<%- include('head', { title: 'Log in', tenantName }) %>
+<h1>Log in</h1>
+<p class="muted">Continue to <%= clientName %> with your <%= tenantName %> account.</p>
+<% if (error) { %><p class="error"><%= error %></p><% } %>
+<form method="post" action="/t/<%= slug %>/interaction/<%= uid %>/login">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <label>Email
+    <input type="email" name="email" required maxlength="254" autocomplete="email" value="<%= email %>">
+  </label>
+  <label>Password
+    <input type="password" name="password" required maxlength="128" autocomplete="current-password">
+  </label>
+  <button type="submit">Log in</button>
+</form>
+<div class="links">
+  <a href="/t/<%= slug %>/forgot-password">Forgot password?</a>
+  <a href="/t/<%= slug %>/signup?interaction=<%= encodeURIComponent(uid) %>">Create account</a>
+  <a href="/t/<%= slug %>/resend-verification?interaction=<%= encodeURIComponent(uid) %>">Resend verification</a>
+</div>
+<%- include('foot') %>

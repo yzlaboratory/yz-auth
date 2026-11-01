@@ -1,0 +1,7 @@
+<%- include('head', { title, tenantName }) %>
+<h1><%= title %></h1>
+<p><%= message %></p>
+<% if (actionUrl && actionText) { %>
+<p><a class="button" href="<%= actionUrl %>"><%= actionText %></a></p>
+<% } %>
+<%- include('foot') %>

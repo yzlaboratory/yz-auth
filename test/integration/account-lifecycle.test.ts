@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { after, afterEach, beforeEach, test } from 'node:test'
+import { afterEach, beforeEach, test } from 'node:test'
 import { PostgresOidcAdapter } from '../../src/oidc/postgres-adapter.js'
 import { createIntegrationContext, deliverNextEmail, extractSecurityToken, type IntegrationContext } from './setup.js'
 
@@ -12,10 +12,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await context?.application.server.close()
   context = undefined
-})
-
-after(async () => {
-  await context?.application.server.close()
 })
 
 test('signup, verification, recovery, and revocation enforce the account lifecycle', async () => {

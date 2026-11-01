@@ -4,8 +4,8 @@ import type { AppConfig } from '../../src/config.js'
 import { createDatabase, migrateDatabase, type Database } from '../../src/db/database.js'
 import { EmailOutboxWorker } from '../../src/email/outbox-worker.js'
 import { MemoryMailSender } from '../../src/email/sender.js'
-import { AccountService } from '../../src/accounts/account-service.js'
-import { TenantService } from '../../src/tenants/tenant-service.js'
+import type { AccountService } from '../../src/accounts/account-service.js'
+import type { TenantService } from '../../src/tenants/tenant-service.js'
 
 export const integrationConfig: AppConfig = {
   environment: 'test',
@@ -51,8 +51,8 @@ export async function createIntegrationContext(): Promise<IntegrationContext> {
   return {
     application,
     database,
-    tenants: new TenantService(database, integrationConfig.encryptionKey),
-    accounts: new AccountService(database, integrationConfig.encryptionKey),
+    tenants: application.tenants,
+    accounts: application.accounts,
     mailSender,
   }
 }

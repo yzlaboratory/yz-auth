@@ -6,16 +6,15 @@ export interface AuditEvent {
   accountId: string | null
   eventType: string
   ipAddress: string | null
-  metadata?: Record<string, unknown>
 }
 
 export async function recordAuditEvent(database: Queryable, event: AuditEvent): Promise<void> {
   await database`
     insert into audit_events (
-      id, tenant_id, account_id, event_type, ip_address, metadata
+      id, tenant_id, account_id, event_type, ip_address
     ) values (
       ${randomUUID()}, ${event.tenantId}, ${event.accountId}, ${event.eventType},
-      ${event.ipAddress}, ${database.json(event.metadata ?? {})}
+      ${event.ipAddress}
     )
   `
 }

@@ -25,7 +25,8 @@ import { authenticationStyles } from './web/styles.js'
 export interface Application {
   server: FastifyInstance
   database: Database
-  mailSender: MailSender
+  tenants: TenantService
+  accounts: AccountService
 }
 
 export async function buildApp(
@@ -154,5 +155,5 @@ export async function buildApp(
     await database.end()
   })
 
-  return { server, database, mailSender }
+  return { server, database, tenants, accounts }
 }

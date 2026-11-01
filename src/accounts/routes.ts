@@ -98,7 +98,6 @@ export function registerAccountRoutes(
         action: `/t/${tenant.slug}/resend-verification`,
         buttonText: 'Resend verification',
         interactionUid: interactionUid(request.query.interaction),
-        message: null,
         csrfToken: issueCsrfToken(request, reply, config.environment === 'production'),
       })
     },
@@ -163,7 +162,6 @@ export function registerAccountRoutes(
         action: `/t/${tenant.slug}/forgot-password`,
         buttonText: 'Send reset link',
         interactionUid: '',
-        message: null,
         csrfToken: issueCsrfToken(request, reply, config.environment === 'production'),
       })
     },

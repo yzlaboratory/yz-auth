@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type Provider from 'oidc-provider'
 import type { AccountService } from '../accounts/account-service.js'
 import type { AppConfig } from '../config.js'
 import type { TenantService, TenantWithSigningKey } from '../tenants/tenant-service.js'
@@ -23,6 +24,13 @@ interface ConsentDetails {
   missingOIDCScope?: string[]
   missingOIDCClaims?: string[]
   missingResourceScopes?: Record<string, string[]>
+}
+
+interface InteractionContext {
+  provider: Provider
+  tenant: TenantWithSigningKey
+  details: Awaited<ReturnType<Provider['interactionDetails']>>
+  clientName: string
 }
 
 export function registerInteractionRoutes(
@@ -191,8 +199,4 @@ async function renderConsent(
     scopes,
     csrfToken: issueCsrfToken(request, reply, config.environment === 'production'),
   })
-}
-
-type InteractionContext = NonNullable<Awaited<ReturnType<typeof loadInteraction>>> & {
-  tenant: TenantWithSigningKey
 }

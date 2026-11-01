@@ -18,9 +18,17 @@ export interface Account {
   tenantId: string
   email: string
   normalizedEmail: string
-  passwordHash: string
   status: 'active' | 'disabled'
   emailVerifiedAt: string | null
+}
+
+interface AccountWithPassword extends Account {
+  passwordHash: string
+}
+
+function withoutPassword(account: AccountWithPassword): Account {
+  const { passwordHash, ...publicAccount } = account
+  return publicAccount
 }
 
 export type AuthenticationResult =
@@ -233,7 +241,7 @@ export class AccountService {
       ipAddress: input.ipAddress,
     })
 
-    return { status: 'success', account }
+    return { status: 'success', account: withoutPassword(account) }
   }
 
   async requestPasswordReset(input: {
@@ -366,16 +374,30 @@ export class AccountService {
     `
   }
 
-  private async findAccountByEmail(tenantId: string, normalizedEmail: string): Promise<Account | null> {
+  private async findAccountByEmail(
+    tenantId: string,
+    normalizedEmail: string,
+  ): Promise<AccountWithPassword | null> {
     const rows = await this.database<AccountRow[]>`
       select ${this.accountColumns} from accounts
       where tenant_id = ${tenantId} and normalized_email = ${normalizedEmail}
     `
 
-    return rows.length === 0 ? null : this.mapAccount(rows[0]!)
+    return rows.length === 0 ? null : this.mapAccountWithPassword(rows[0]!)
   }
 
   private mapAccount(row: AccountRow): Account {
+    return {
+      id: row.id,
+      tenantId: row.tenant_id,
+      email: row.email,
+      normalizedEmail: row.normalized_email,
+      status: row.status,
+      emailVerifiedAt: row.email_verified_at,
+    }
+  }
+
+  private mapAccountWithPassword(row: AccountRow): AccountWithPassword {
     return {
       id: row.id,
       tenantId: row.tenant_id,

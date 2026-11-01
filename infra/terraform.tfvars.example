@@ -1,0 +1,9 @@
+dns_zone         = "example.com"
+mail_subdomain   = "mail"
+app_subdomain    = "auth"
+app_ipv4_address = null
+app_ipv6_address = null
+dmarc_value      = "v=DMARC1; p=none"
+dkim_hosted_zone     = "dkim.amazonses.com"
+backup_bucket_name   = "replace-with-your-unique-backup-bucket"
+backup_retention_days = 30

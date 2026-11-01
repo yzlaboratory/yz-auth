@@ -3,7 +3,7 @@ import { buildApp } from '../../src/app.js'
 import type { AppConfig } from '../../src/config.js'
 import { createDatabase, migrateDatabase, type Database } from '../../src/db/database.js'
 import { EmailOutboxWorker } from '../../src/email/outbox-worker.js'
-import { MemoryMailSender } from '../../src/email/sender.js'
+import { MemoryMailSender } from './memory-mail-sender.js'
 import type { AccountService } from '../../src/accounts/account-service.js'
 import type { TenantService } from '../../src/tenants/tenant-service.js'
 
@@ -17,8 +17,11 @@ export const integrationConfig: AppConfig = {
   cookieKeys: ['integration-test-cookie-key-1234567890'],
   encryptionKey: Buffer.alloc(32, 11),
   email: {
-    driver: 'memory',
+    driver: 'smtp',
     from: 'yz-auth <no-reply@localhost>',
+    host: 'localhost',
+    port: 1025,
+    secure: false,
   },
   emailOutboxPollMs: 60_000,
 }

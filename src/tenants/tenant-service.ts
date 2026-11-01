@@ -67,13 +67,16 @@ interface ClientRow {
   tenant_id: string
   name: string
   client_id: string
-  secret_ciphertext: string | null
   redirect_uris: string[]
   post_logout_redirect_uris: string[]
   resource_uris: string[]
   is_public: boolean
   status: 'active' | 'disabled'
   updated_at: string
+}
+
+interface ClientRowWithSecret extends ClientRow {
+  secret_ciphertext: string | null
 }
 
 export class TenantService {
@@ -186,8 +189,8 @@ export class TenantService {
   }
 
   async getClientsWithSecrets(tenantId: string): Promise<OidcClientWithSecret[]> {
-    const rows = await this.database<ClientRow[]>`
-      select ${this.clientColumns} from clients
+    const rows = await this.database<ClientRowWithSecret[]>`
+      select ${this.clientColumnsWithSecret} from clients
       where tenant_id = ${tenantId} and status = 'active'
       order by created_at
     `
@@ -229,6 +232,13 @@ export class TenantService {
   }
 
   private get clientColumns() {
+    return this.database`
+      id, tenant_id, name, client_id, redirect_uris,
+      post_logout_redirect_uris, resource_uris, is_public, status, updated_at::text as updated_at
+    `
+  }
+
+  private get clientColumnsWithSecret() {
     return this.database`
       id, tenant_id, name, client_id, secret_ciphertext, redirect_uris,
       post_logout_redirect_uris, resource_uris, is_public, status, updated_at::text as updated_at

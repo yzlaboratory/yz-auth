@@ -6,14 +6,14 @@ const baseEnvironment = {
   DATABASE_URL: 'postgres://localhost/yz_auth',
   COOKIE_KEYS: '12345678901234567890123456789012',
   KEY_ENCRYPTION_KEY: Buffer.alloc(32, 3).toString('base64'),
-  EMAIL_DRIVER: 'memory',
+  EMAIL_DRIVER: 'smtp',
 }
 
-test('configuration creates a memory email driver for tests', () => {
+test('configuration creates an smtp email driver by default', () => {
   const config = loadConfig(baseEnvironment)
 
   assert.equal(config.environment, 'development')
-  assert.equal(config.email.driver, 'memory')
+  assert.equal(config.email.driver, 'smtp')
   assert.equal(config.publicBaseUrl, 'http://localhost:3000')
 })
 

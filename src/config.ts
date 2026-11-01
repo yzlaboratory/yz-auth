@@ -12,7 +12,7 @@ const environmentSchema = z.object({
   DATABASE_URL: z.string().min(1),
   COOKIE_KEYS: z.string().min(32),
   KEY_ENCRYPTION_KEY: z.string().min(1),
-  EMAIL_DRIVER: z.enum(['ses', 'smtp', 'memory']).default('smtp'),
+  EMAIL_DRIVER: z.enum(['ses', 'smtp']).default('smtp'),
   EMAIL_FROM: z.string().default('yz-auth <no-reply@localhost>'),
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: portValue.default(1025),
@@ -38,12 +38,7 @@ export interface SesEmailConfig {
   configurationSetName: string
 }
 
-export interface MemoryEmailConfig {
-  driver: 'memory'
-  from: string
-}
-
-export type EmailConfig = SmtpEmailConfig | SesEmailConfig | MemoryEmailConfig
+export type EmailConfig = SmtpEmailConfig | SesEmailConfig
 
 export interface AppConfig {
   environment: 'development' | 'test' | 'production'
@@ -108,18 +103,11 @@ function loadEmailConfig(environment: z.infer<typeof environmentSchema>): EmailC
     }
   }
 
-  if (environment.EMAIL_DRIVER === 'smtp') {
-    return {
-      driver: 'smtp',
-      from: environment.EMAIL_FROM,
-      host: environment.SMTP_HOST,
-      port: environment.SMTP_PORT,
-      secure: environment.SMTP_SECURE,
-    }
-  }
-
   return {
-    driver: 'memory',
+    driver: 'smtp',
     from: environment.EMAIL_FROM,
+    host: environment.SMTP_HOST,
+    port: environment.SMTP_PORT,
+    secure: environment.SMTP_SECURE,
   }
 }

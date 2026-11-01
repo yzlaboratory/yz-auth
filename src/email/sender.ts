@@ -17,20 +17,7 @@ export interface MailSender {
   send(message: EmailMessage): Promise<DeliveryResult>
 }
 
-export class MemoryMailSender implements MailSender {
-  readonly messages: EmailMessage[] = []
-
-  async send(message: EmailMessage): Promise<DeliveryResult> {
-    this.messages.push(message)
-    return { providerMessageId: null }
-  }
-}
-
 export function createMailSender(config: EmailConfig): MailSender {
-  if (config.driver === 'memory') {
-    return new MemoryMailSender()
-  }
-
   if (config.driver === 'ses') {
     const client = new SESv2Client({ region: config.region })
 

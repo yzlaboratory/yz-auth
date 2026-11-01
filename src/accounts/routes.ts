@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { AppConfig } from '../config.js'
 import type { TenantService } from '../tenants/tenant-service.js'
+import { ClientError } from '../web/client-error.js'
 import { hasValidCsrfToken, issueCsrfToken } from '../web/csrf.js'
 import { sensitiveRateLimit } from '../web/rate-limit.js'
 import { renderInvalidCsrf, renderMessage } from '../web/responses.js'
@@ -58,13 +59,27 @@ export function registerAccountRoutes(
         return renderInvalidCsrf(reply, tenant)
       }
 
-      await accounts.signUp({
-        tenant,
-        email: required(request.body.email, 'email'),
-        password: required(request.body.password, 'password'),
-        interactionUid: interactionUid(request.body.interaction),
-        ipAddress: request.ip,
-      })
+      try {
+        await accounts.signUp({
+          tenant,
+          email: required(request.body.email, 'email'),
+          password: required(request.body.password, 'password'),
+          interactionUid: interactionUid(request.body.interaction),
+          ipAddress: request.ip,
+        })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).viewAsync('signup.ejs', {
+            tenantName: tenant.name,
+            slug: tenant.slug,
+            interactionUid: interactionUid(request.body.interaction),
+            email: request.body.email ?? '',
+            error: validationMessage(error),
+            csrfToken: issueCsrfToken(request, reply, config.environment === 'production'),
+          })
+        }
+        throw error
+      }
 
       return renderCheckYourInbox(reply, tenant.name)
     },
@@ -205,12 +220,26 @@ export function registerAccountRoutes(
         return renderInvalidCsrf(reply, tenant)
       }
 
-      const reset = await accounts.resetPassword({
-        tenant,
-        token: required(request.body.token, 'token'),
-        password: required(request.body.password, 'password'),
-        ipAddress: request.ip,
-      })
+      let reset: boolean
+      try {
+        reset = await accounts.resetPassword({
+          tenant,
+          token: required(request.body.token, 'token'),
+          password: required(request.body.password, 'password'),
+          ipAddress: request.ip,
+        })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return reply.code(400).viewAsync('reset-password.ejs', {
+            tenantName: tenant.name,
+            slug: tenant.slug,
+            token: request.body.token ?? '',
+            error: validationMessage(error),
+            csrfToken: issueCsrfToken(request, reply, config.environment === 'production'),
+          })
+        }
+        throw error
+      }
       if (!reset) {
         return renderInvalidResetLink(reply, tenant.name)
       }
@@ -222,10 +251,22 @@ export function registerAccountRoutes(
 
 function required(value: string | undefined, name: string): string {
   if (!value) {
-    throw new Error(`${name} is required`)
+    throw new ClientError(`${name} is required`)
   }
 
   return value
+}
+
+function validationMessage(error: z.ZodError): string {
+  const paths = error.issues.flatMap((issue) => issue.path)
+  if (paths.includes('password')) {
+    return 'Use a password of 12 to 128 characters.'
+  }
+  if (paths.includes('email')) {
+    return 'Enter a valid email address.'
+  }
+
+  return 'Check the form and try again.'
 }
 
 function interactionUid(value: string | undefined): string {

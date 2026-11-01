@@ -6,6 +6,7 @@ import rateLimit from '@fastify/rate-limit'
 import view from '@fastify/view'
 import ejs from 'ejs'
 import Fastify, { type FastifyInstance } from 'fastify'
+import { ZodError } from 'zod'
 import { registerAccountRoutes } from './accounts/routes.js'
 import { AccountService } from './accounts/account-service.js'
 import type { AppConfig } from './config.js'
@@ -17,6 +18,8 @@ import { purgeExpiredOidcModels } from './oidc/postgres-adapter.js'
 import { OidcProviderManager } from './oidc/provider-manager.js'
 import { registerOidcRoutes } from './oidc/routes.js'
 import { TenantService } from './tenants/tenant-service.js'
+import { ClientError } from './web/client-error.js'
+import { renderMessage } from './web/responses.js'
 import { authenticationStyles } from './web/styles.js'
 
 export interface Application {
@@ -104,22 +107,34 @@ export async function buildApp(
     registerInteractionRoutes(web, providers, accounts, tenants, config)
 
     web.setErrorHandler(async (error, _request, reply) => {
-      const isClientError = error instanceof Error
-        && (error.name === 'ZodError' || error.message.endsWith('is required'))
       const frameworkStatus = error instanceof Error && 'statusCode' in error
         ? error.statusCode
         : undefined
-      const statusCode = typeof frameworkStatus === 'number'
-        && frameworkStatus >= 400 && frameworkStatus < 500
-        ? frameworkStatus
-        : isClientError ? 400 : 500
+      const statusCode = error instanceof ClientError
+        ? error.statusCode
+        : error instanceof ZodError
+          ? 400
+          : typeof frameworkStatus === 'number'
+            && frameworkStatus >= 400 && frameworkStatus < 500
+            ? frameworkStatus
+            : 500
       if (statusCode === 500) {
         web.log.error(error)
       }
 
-      return reply.code(statusCode).type('text/html; charset=utf-8').send(
-        '<!doctype html><html lang="en"><meta name="viewport" content="width=device-width"><title>Request error</title><h1>Request error</h1><p>The request could not be completed.</p></html>',
-      )
+      try {
+        return await renderMessage(
+          reply,
+          statusCode,
+          'yz-auth',
+          'Request error',
+          'The request could not be completed.',
+        )
+      } catch {
+        return reply.code(statusCode).type('text/html; charset=utf-8').send(
+          '<!doctype html><html lang="en"><meta name="viewport" content="width=device-width"><title>Request error</title><h1>Request error</h1><p>The request could not be completed.</p></html>',
+        )
+      }
     })
   })
 

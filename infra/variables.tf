@@ -1,3 +1,9 @@
+variable "aws_region" {
+  description = "AWS region for SES, IAM, and the S3 backup bucket."
+  type        = string
+  default     = "eu-central-1"
+}
+
 variable "dns_zone" {
   description = "Porkbun authoritative DNS zone without a trailing dot."
   type        = string

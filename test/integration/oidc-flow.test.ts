@@ -170,7 +170,7 @@ async function completeInteraction(
     }
     assert.equal(page.statusCode, 200, page.body)
 
-    const isLogin = page.body.includes('/login')
+    const isLogin = page.body.includes('name="password"')
     const action = isLogin ? 'login' : 'consent'
     const csrfToken = extractCsrf(page.body)
     const uid = location.match(/\/interaction\/([^/?]+)/)?.[1]

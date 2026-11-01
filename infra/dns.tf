@@ -12,7 +12,7 @@ resource "porkbun_dns_record" "ses_mail_from_mx" {
   domain    = var.dns_zone
   subdomain = local.mail_from_subdomain
   type      = "MX"
-  content   = "feedback-smtp.eu-central-1.amazonses.com"
+  content   = "feedback-smtp.${var.aws_region}.amazonses.com"
   priority  = 10
   ttl       = 600
 }

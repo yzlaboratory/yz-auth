@@ -80,6 +80,7 @@ Edit `backend.tfvars` and set `bucket` to the exact bootstrap output. Keep `key`
 
 Edit `terraform.tfvars`:
 
+- Leave `aws_region = "eu-central-1"` unless deployment must move; it defaults to `eu-central-1` and must match the SES region.
 - Set `dns_zone` to the actual zone without a trailing dot.
 - Set `backup_bucket_name` to a new, globally unique bucket for PostgreSQL backups and adjust `backup_retention_days` only when a different retention period is required.
 - Set `app_ipv4_address` and/or `app_ipv6_address` to create application records. Leave them `null` to omit those records.

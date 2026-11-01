@@ -21,7 +21,7 @@ output "ses_aws_secret_access_key" {
 
 output "backup_bucket_name" {
   description = "S3 bucket used for yz-auth PostgreSQL backups."
-  value       = aws_s3_bucket.backups.bucket
+  value       = module.backups.bucket
 }
 
 output "backup_aws_access_key_id" {

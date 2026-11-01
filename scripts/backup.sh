@@ -5,8 +5,18 @@ set -euo pipefail
 : "${BACKUP_BUCKET:?}"
 : "${AWS_REGION:?}"
 
+backup_file=""
+
+cleanup() {
+  if [[ -n "$backup_file" ]]; then
+    rm -f "$backup_file"
+  fi
+}
+
+trap cleanup EXIT
+trap 'exit 130' INT TERM
+
 create_backup() {
-  local backup_file
   local backup_key
   backup_file=$(mktemp /tmp/yz-auth-backup.XXXXXX.dump)
   backup_key="yz-auth/$(date -u +%Y/%m/%d/%Y%m%dT%H%M%SZ.dump)"
@@ -18,15 +28,18 @@ create_backup() {
     --format=custom \
     --file="$backup_file"; then
     rm -f "$backup_file"
+    backup_file=""
     return 1
   fi
 
-  if ! aws s3 cp "$backup_file" "s3://${BACKUP_BUCKET}/${backup_key}" --only-show-errors; then
+  if ! aws s3 cp "$backup_file" "s3://${BACKUP_BUCKET}/${backup_key}" --region "${AWS_REGION}" --only-show-errors; then
     rm -f "$backup_file"
+    backup_file=""
     return 1
   fi
 
   rm -f "$backup_file"
+  backup_file=""
 }
 
 while true; do

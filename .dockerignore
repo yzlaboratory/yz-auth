@@ -6,3 +6,7 @@ dist
 infra/.terraform
 infra/bootstrap/.terraform
 coverage
+test
+docs
+.github
+README.md

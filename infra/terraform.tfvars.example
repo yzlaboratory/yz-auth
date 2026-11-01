@@ -1,3 +1,4 @@
+aws_region       = "eu-central-1"
 dns_zone         = "example.com"
 mail_subdomain   = "mail"
 app_subdomain    = "auth"

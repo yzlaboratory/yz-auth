@@ -114,12 +114,14 @@ export function registerAccountRoutes(
         return renderInvalidCsrf(reply, tenant)
       }
 
+      const startedAt = performance.now()
       await accounts.resendVerification({
         tenant,
         email: required(request.body.email, 'email'),
         interactionUid: interactionUid(request.body.interaction),
         ipAddress: request.ip,
       })
+      await ensureMinimumDuration(startedAt, 300)
 
       return renderCheckYourInbox(reply, tenant.name)
     },

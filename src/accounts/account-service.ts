@@ -8,6 +8,7 @@ import { createOneTimeToken, hashBearerToken, normalizeEmail } from '../security
 import type { Tenant } from '../tenants/tenant-service.js'
 
 const emailSchema = z.email().max(254)
+const loginInputSchema = z.object({ email: emailSchema, password: z.string().min(1).max(128) })
 const verificationLifetimeMs = 24 * 60 * 60 * 1000
 const passwordResetLifetimeMs = 60 * 60 * 1000
 
@@ -189,15 +190,21 @@ export class AccountService {
     password: string
     ipAddress: string | null
   }): Promise<AuthenticationResult> {
-    const normalizedEmail = normalizeEmail(input.email)
-    const account = await this.findAccountByEmail(input.tenant.id, normalizedEmail)
-
-    if (!account) {
-      await hashPassword(input.password)
+    const parsed = loginInputSchema.safeParse({ email: input.email, password: input.password })
+    if (!parsed.success) {
       return { status: 'invalid' }
     }
 
-    const isValid = await verifyPassword(input.password, account.passwordHash)
+    const { email, password } = parsed.data
+    const normalizedEmail = normalizeEmail(email)
+    const account = await this.findAccountByEmail(input.tenant.id, normalizedEmail)
+
+    if (!account) {
+      await hashPassword(password)
+      return { status: 'invalid' }
+    }
+
+    const isValid = await verifyPassword(password, account.passwordHash)
     if (!isValid || account.status !== 'active') {
       await recordAuditEvent(this.database, {
         tenantId: account.tenantId,
@@ -209,6 +216,12 @@ export class AccountService {
     }
 
     if (!account.emailVerifiedAt) {
+      await recordAuditEvent(this.database, {
+        tenantId: account.tenantId,
+        accountId: account.id,
+        eventType: 'account.login_rejected_unverified',
+        ipAddress: input.ipAddress,
+      })
       return { status: 'unverified' }
     }
 

@@ -79,7 +79,7 @@ export async function buildApp(
     },
   })
 
-  server.get('/health/live', async () => ({ status: 'ok' }))
+  server.get('/health/live', () => ({ status: 'ok' }))
   server.get('/health/ready', async () => {
     await database`select 1`
     return { status: 'ok' }
@@ -98,7 +98,7 @@ export async function buildApp(
       hook: 'preHandler',
     })
 
-    web.get('/assets/auth.css', async (_request, reply) => {
+    web.get('/assets/auth.css', (_request, reply) => {
       return reply
         .type('text/css; charset=utf-8')
         .header('Cache-Control', 'public, max-age=3600')
@@ -137,7 +137,7 @@ export async function buildApp(
     registerOidcRoutes(oidc, providers)
   })
 
-  server.addHook('onReady', async () => {
+  server.addHook('onReady', () => {
     if (startOutboxWorker) {
       outboxWorker.start()
     }

@@ -3,8 +3,8 @@ import type { DeliveryResult, EmailMessage, MailSender } from '../../src/email/s
 export class MemoryMailSender implements MailSender {
   readonly messages: EmailMessage[] = []
 
-  async send(message: EmailMessage): Promise<DeliveryResult> {
+  send(message: EmailMessage): Promise<DeliveryResult> {
     this.messages.push(message)
-    return { providerMessageId: null }
+    return Promise.resolve({ providerMessageId: null })
   }
 }

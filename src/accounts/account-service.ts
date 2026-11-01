@@ -153,7 +153,7 @@ export class AccountService {
     })
   }
 
-  async verifyEmail(input: {
+  verifyEmail(input: {
     tenant: Tenant
     token: string
     ipAddress: string | null

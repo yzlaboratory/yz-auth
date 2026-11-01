@@ -163,7 +163,7 @@ async function loadInteraction(
   return { tenant, provider, details, clientName }
 }
 
-async function renderLogin(
+function renderLogin(
   request: FastifyRequest,
   reply: FastifyReply,
   context: InteractionContext,
@@ -182,7 +182,7 @@ async function renderLogin(
   })
 }
 
-async function renderConsent(
+function renderConsent(
   request: FastifyRequest,
   reply: FastifyReply,
   context: InteractionContext,

@@ -67,7 +67,7 @@ export class OidcProviderManager {
     version: string,
   ): Promise<Provider> {
     const issuer = `${this.config.publicBaseUrl}/t/${tenant.slug}`
-    const signingKeys = await this.tenants.getSigningKeys(tenant)
+    const signingKeys = this.tenants.getSigningKeys(tenant)
     const provider = new Provider(issuer, {
       adapter: (model) => new PostgresOidcAdapter(this.database, tenant.id, model),
       clients: clients.map(toClientMetadata),
@@ -80,7 +80,7 @@ export class OidcProviderManager {
       rotateRefreshToken: true,
       acceptQueryParamAccessTokens: false,
       interactions: {
-        url: async (_context, interaction) => `/t/${tenant.slug}/interaction/${interaction.uid}`,
+        url: (_context, interaction) => `/t/${tenant.slug}/interaction/${interaction.uid}`,
       },
       findAccount: async (_context, accountId) => {
         const account = await this.accounts.findAccount(tenant.id, accountId)
@@ -93,14 +93,14 @@ export class OidcProviderManager {
 
         return {
           accountId,
-          claims: async () => ({
+          claims: () => ({
             sub: account.id,
             email: account.email,
             email_verified: true,
           }),
         }
       },
-      extraTokenClaims: async () => ({
+      extraTokenClaims: () => ({
         tenant_id: tenant.id,
         tenant: tenant.slug,
       }),
@@ -112,7 +112,7 @@ export class OidcProviderManager {
         rpInitiatedLogout: { enabled: true },
         resourceIndicators: {
           enabled: true,
-          getResourceServerInfo: async (_context, resource, client) => {
+          getResourceServerInfo: (_context, resource, client) => {
             const registration = clients.find((candidate) => candidate.clientId === client.clientId)
             if (!registration?.resourceUris.includes(resource)) {
               throw new errors.InvalidTarget()
@@ -126,7 +126,7 @@ export class OidcProviderManager {
               jwt: { sign: { alg: 'RS256' } },
             }
           },
-          useGrantedResource: async () => true,
+          useGrantedResource: () => true,
         },
       },
       cookies: {

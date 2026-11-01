@@ -152,7 +152,7 @@ export class TenantService {
     return rows.length === 1
   }
 
-  async getSigningKeys(tenant: TenantWithSigningKey): Promise<NonNullable<Configuration['jwks']>> {
+  getSigningKeys(tenant: TenantWithSigningKey): NonNullable<Configuration['jwks']> {
     const plaintext = decryptSecret(tenant.signingKeyCiphertext, this.encryptionKey)
     return JSON.parse(plaintext) as NonNullable<Configuration['jwks']>
   }

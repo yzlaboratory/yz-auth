@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 export const passwordSchema = z.string().min(12).max(128)
 
-export async function hashPassword(password: string): Promise<string> {
+export function hashPassword(password: string): Promise<string> {
   return argon2id({
     password: password.normalize('NFKC'),
     salt: randomBytes(16),
@@ -16,7 +16,7 @@ export async function hashPassword(password: string): Promise<string> {
   })
 }
 
-export async function verifyPassword(password: string, encodedHash: string): Promise<boolean> {
+export function verifyPassword(password: string, encodedHash: string): Promise<boolean> {
   return argon2Verify({
     password: password.normalize('NFKC'),
     hash: encodedHash,

@@ -146,9 +146,9 @@ export class TenantService {
     isPublic?: boolean
   }): Promise<ClientCreation | null> {
     const client = clientInputSchema.parse(input)
-    client.redirectUris.forEach(assertValidRedirectUri)
-    client.postLogoutRedirectUris.forEach(assertValidRedirectUri)
-    client.resourceUris.forEach(assertValidRedirectUri)
+    client.redirectUris.forEach(assertValidHttpsUri)
+    client.postLogoutRedirectUris.forEach(assertValidHttpsUri)
+    client.resourceUris.forEach(assertValidHttpsUri)
 
     const tenant = await this.getTenant(client.tenantSlug)
     if (!tenant || tenant.status !== 'active') {
@@ -283,7 +283,7 @@ function requiredRow<T>(rows: T[], message: string): T {
   return row
 }
 
-function assertValidRedirectUri(value: string): void {
+function assertValidHttpsUri(value: string): void {
   const uri = new URL(z.url().parse(value))
 
   if (uri.hash) {

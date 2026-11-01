@@ -4,8 +4,9 @@ import { recordAuditEvent } from '../audit/record-audit-event.js'
 import type { Database, Queryable } from '../db/database.js'
 import { enqueueEmail } from '../email/outbox.js'
 import { hashPassword, passwordSchema, verifyPassword } from '../security/passwords.js'
-import { createOneTimeToken, hashBearerToken, normalizeEmail } from '../security/tokens.js'
+import { createOneTimeToken, hashBearerToken } from '../security/tokens.js'
 import type { Tenant } from '../tenants/tenant-service.js'
+import { normalizeEmail } from './email.js'
 
 const emailSchema = z.email().max(254)
 const loginInputSchema = z.object({ email: emailSchema, password: z.string().min(1).max(128) })

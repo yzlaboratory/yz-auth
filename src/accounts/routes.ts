@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { AppConfig } from '../config.js'
+import { required } from '../required.js'
 import type { TenantService } from '../tenants/tenant-service.js'
-import { ClientError } from '../web/client-error.js'
 import { hasValidCsrfToken, issueCsrfToken } from '../web/csrf.js'
 import { sensitiveRateLimit } from '../web/rate-limit.js'
 import { renderInvalidCsrf, renderMessage } from '../web/responses.js'
@@ -247,14 +247,6 @@ export function registerAccountRoutes(
       return renderMessage(reply, 200, tenant.name, 'Password reset', 'Your password has been changed. Existing sessions have been revoked; you can now log in again.')
     },
   )
-}
-
-function required(value: string | undefined, name: string): string {
-  if (!value) {
-    throw new ClientError(`${name} is required`)
-  }
-
-  return value
 }
 
 function validationMessage(error: z.ZodError): string {

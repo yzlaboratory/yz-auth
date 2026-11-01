@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { normalizeEmail } from '../src/accounts/email.js'
 import { hashPassword, verifyPassword } from '../src/security/passwords.js'
 import { decryptSecret, encryptSecret } from '../src/security/secret-cipher.js'
-import { createOneTimeToken, hashBearerToken, normalizeEmail } from '../src/security/tokens.js'
+import { createOneTimeToken, hashBearerToken } from '../src/security/tokens.js'
 
 test('password hashes verify only the original password', async () => {
   const encoded = await hashPassword('a-secure-password')

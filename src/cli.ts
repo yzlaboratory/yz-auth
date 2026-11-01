@@ -3,6 +3,7 @@ import { parseArgs } from 'node:util'
 import { loadConfig } from './config.js'
 import { createDatabase, migrateDatabase } from './db/database.js'
 import { loadEnvironmentFile } from './load-environment.js'
+import { required } from './required.js'
 import { createEncryptionKey } from './security/secret-cipher.js'
 import { TenantService } from './tenants/tenant-service.js'
 
@@ -51,8 +52,8 @@ try {
 async function executeCommand(): Promise<void> {
   if (resource === 'tenants' && action === 'create') {
     const tenant = await tenants.createTenant({
-      slug: required(values.slug, 'slug'),
-      name: required(values.name, 'name'),
+      slug: required(values.slug, '--slug'),
+      name: required(values.name, '--name'),
     })
     print(tenant)
     return
@@ -64,7 +65,7 @@ async function executeCommand(): Promise<void> {
   }
 
   if (resource === 'tenants' && action === 'disable') {
-    const disabled = await tenants.disableTenant(required(values.slug, 'slug'))
+    const disabled = await tenants.disableTenant(required(values.slug, '--slug'))
     print({ disabled })
     process.exitCode = disabled ? 0 : 1
     return
@@ -72,8 +73,8 @@ async function executeCommand(): Promise<void> {
 
   if (resource === 'clients' && action === 'create') {
     const result = await tenants.createClient({
-      tenantSlug: required(values.tenant, 'tenant'),
-      name: required(values.name, 'name'),
+      tenantSlug: required(values.tenant, '--tenant'),
+      name: required(values.name, '--name'),
       redirectUris: values['redirect-uri'] ?? [],
       postLogoutRedirectUris: values['post-logout-redirect-uri'] ?? [],
       resourceUris: values['resource-uri'] ?? [],
@@ -85,14 +86,14 @@ async function executeCommand(): Promise<void> {
   }
 
   if (resource === 'clients' && action === 'list') {
-    print(await tenants.listClients(required(values.tenant, 'tenant')))
+    print(await tenants.listClients(required(values.tenant, '--tenant')))
     return
   }
 
   if (resource === 'clients' && action === 'disable') {
     const disabled = await tenants.disableClient(
-      required(values.tenant, 'tenant'),
-      required(values['client-id'], 'client-id'),
+      required(values.tenant, '--tenant'),
+      required(values['client-id'], '--client-id'),
     )
     print({ disabled })
     process.exitCode = disabled ? 0 : 1
@@ -101,8 +102,8 @@ async function executeCommand(): Promise<void> {
 
   if (resource === 'clients' && action === 'rotate-secret') {
     const clientSecret = await tenants.rotateClientSecret(
-      required(values.tenant, 'tenant'),
-      required(values['client-id'], 'client-id'),
+      required(values.tenant, '--tenant'),
+      required(values['client-id'], '--client-id'),
     )
     print({ clientSecret })
     process.exitCode = clientSecret ? 0 : 1
@@ -110,14 +111,6 @@ async function executeCommand(): Promise<void> {
   }
 
   throw new Error('Expected db migrate, tenants create|list|disable, clients create|list|disable|rotate-secret, or secrets generate')
-}
-
-function required(value: string | undefined, name: string): string {
-  if (!value) {
-    throw new Error(`--${name} is required`)
-  }
-
-  return value
 }
 
 function print(value: unknown): void {

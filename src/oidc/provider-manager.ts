@@ -18,6 +18,8 @@ interface ProviderEntry {
   provider: Provider
 }
 
+const accessTokenTtlSeconds = 300
+
 export class OidcProviderManager {
   private readonly cache = new Map<string, ProviderEntry>()
   private readonly pending = new Map<string, Promise<Provider | null>>()
@@ -116,7 +118,7 @@ export class OidcProviderManager {
             return {
               scope: 'api',
               audience: resource,
-              accessTokenTTL: 300,
+              accessTokenTTL: accessTokenTtlSeconds,
               accessTokenFormat: 'jwt',
               jwt: { sign: { alg: 'RS256' } },
             }
@@ -147,7 +149,7 @@ export class OidcProviderManager {
         Grant: 14 * 24 * 60 * 60,
         Session: 14 * 24 * 60 * 60,
         Interaction: 60 * 60,
-        AccessToken: 300,
+        AccessToken: accessTokenTtlSeconds,
         AuthorizationCode: 60,
         IdToken: 300,
         RefreshToken: 30 * 24 * 60 * 60,

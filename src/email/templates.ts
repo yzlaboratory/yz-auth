@@ -53,16 +53,14 @@ function createSecurityEmailHtml(
   return `<!doctype html><html><body><h1>${escapeHtml(title)}</h1><p><a href="${escapeHtml(actionUrl)}">${escapeHtml(action)}</a></p><p>If the link does not work, copy this address into your browser:</p><p>${escapeHtml(actionUrl)}</p><pre>${escapeHtml(fallbackText)}</pre></body></html>`
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    const replacements: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    }
+const htmlEscapes: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
 
-    return replacements[character] ?? character
-  })
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => htmlEscapes[character] ?? character)
 }

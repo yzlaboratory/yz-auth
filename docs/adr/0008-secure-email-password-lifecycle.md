@@ -13,7 +13,7 @@ Implement the following lifecycle uniformly for every tenant:
 
 - Hash passwords with **Argon2id**, using reviewed parameters and a versioned hash format that permits future rehashing.
 - Require email verification before login or token issuance. Verification links are tenant-scoped and expire after a bounded period.
-- Generate verification and password-reset tokens with a cryptographically secure random generator. Store only hashes of these bearer tokens and enforce single use and expiry.
+- Generate verification and password-reset tokens from random token identifiers and keyed HMAC signatures. Store only hashes of these bearer tokens and enforce single use and expiry. Reconstruct raw links only in delivery memory; never persist them in the outbox or write them to logs.
 - Return generic forgot-password responses whether or not the email is registered, and avoid materially different timing or side channels between the two cases.
 - Invalidate the used token and revoke the account's browser sessions and OIDC grants/refresh tokens after a successful password reset. Short access-token lifetimes bound the use of already-issued JWTs.
 - Rate-limit signup, login, verification resend, and recovery attempts using tenant, account, and network signals where applicable. Add audit events without logging passwords, raw tokens, or secret-bearing URLs.

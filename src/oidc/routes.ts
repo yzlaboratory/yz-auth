@@ -51,5 +51,16 @@ function dispatchProvider(
   Object.assign(request.raw, { originalUrl: urls.originalUrl })
   request.raw.url = urls.internalUrl
   reply.hijack()
-  void provider.callback()(request.raw, reply.raw)
+  const callback = provider.callback()
+  void (async () => {
+    try {
+      await callback(request.raw, reply.raw)
+    } catch (error) {
+      request.log.error(error)
+      if (!reply.raw.headersSent) {
+        reply.raw.statusCode = 500
+        reply.raw.end()
+      }
+    }
+  })()
 }

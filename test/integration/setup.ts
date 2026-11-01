@@ -47,7 +47,7 @@ export async function createIntegrationContext(): Promise<IntegrationContext> {
   }
 
   const mailSender = new MemoryMailSender()
-  const application = await buildApp(integrationConfig, { mailSender })
+  const application = await buildApp(integrationConfig, { mailSender, startOutboxWorker: false })
   const database = application.database
   await clearDatabase(database)
 

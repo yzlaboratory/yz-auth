@@ -36,9 +36,11 @@ export class EmailOutboxWorker {
     }
 
     const deliver = () => {
-      if (!this.isDelivering) {
-        this.activeDelivery = this.deliverSafely()
+      if (this.isDelivering) {
+        return
       }
+
+      this.activeDelivery = this.deliverSafely()
     }
     this.timer = setInterval(deliver, this.pollIntervalMs)
     this.timer.unref()
@@ -68,6 +70,7 @@ export class EmailOutboxWorker {
       where email_outbox.status = 'pending' and email_outbox.next_attempt_at <= now()
       order by email_outbox.created_at
       limit 1
+      for update of email_outbox skip locked
     `
     const email = rows[0]
 
@@ -131,10 +134,6 @@ export class EmailOutboxWorker {
   }
 
   private async deliverSafely(): Promise<void> {
-    if (this.isDelivering) {
-      return
-    }
-
     this.isDelivering = true
     try {
       await this.deliverNext()

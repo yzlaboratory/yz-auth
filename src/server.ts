@@ -6,10 +6,28 @@ loadEnvironmentFile()
 const config = loadConfig()
 const { server } = await buildApp(config)
 
+let shuttingDown = false
+
+const shutdown = (): void => {
+  if (shuttingDown) {
+    return
+  }
+
+  shuttingDown = true
+  const forceExitTimer = setTimeout(() => process.exit(1), 10_000)
+  forceExitTimer.unref()
+
+  void server.close().then(
+    () => process.exit(0),
+    (error: unknown) => {
+      server.log.error(error)
+      process.exit(1)
+    },
+  )
+}
+
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
-  process.on(signal, () => {
-    void server.close().then(() => process.exit(0))
-  })
+  process.on(signal, shutdown)
 }
 
 try {

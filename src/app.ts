@@ -31,7 +31,7 @@ export interface Application {
 
 export async function buildApp(
   config: AppConfig,
-  dependencies: { mailSender?: MailSender } = {},
+  dependencies: { mailSender?: MailSender; startOutboxWorker?: boolean } = {},
 ): Promise<Application> {
   const database = createDatabase(config.databaseUrl)
 
@@ -39,6 +39,7 @@ export async function buildApp(
   const accounts = new AccountService(database, config.encryptionKey)
   const providers = new OidcProviderManager(database, tenants, accounts, config)
   const mailSender = dependencies.mailSender ?? createMailSender(config.email)
+  const startOutboxWorker = dependencies.startOutboxWorker ?? true
   const server = Fastify({
     logger: config.environment === 'test' ? false : {
       level: 'info',
@@ -147,7 +148,9 @@ export async function buildApp(
   })
 
   server.addHook('onReady', async () => {
-    outboxWorker.start()
+    if (startOutboxWorker) {
+      outboxWorker.start()
+    }
   })
   server.addHook('onClose', async () => {
     await outboxWorker.stop()

@@ -61,11 +61,11 @@ export class OidcProviderManager {
     return creation
   }
 
-  private async createProvider(
+  private createProvider(
     tenant: TenantWithSigningKey,
     clients: OidcClientWithSecret[],
     version: string,
-  ): Promise<Provider> {
+  ): Provider {
     const issuer = `${this.config.publicBaseUrl}/t/${tenant.slug}`
     const signingKeys = this.tenants.getSigningKeys(tenant)
     const provider = new Provider(issuer, {

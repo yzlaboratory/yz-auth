@@ -42,13 +42,9 @@ resource "aws_s3_bucket_ownership_controls" "this" {
   }
 }
 
-resource "aws_s3_bucket_logging" "this" {
-  bucket        = aws_s3_bucket.this.id
-  target_bucket = aws_s3_bucket.this.id
-  target_prefix = "logs/"
-}
+data "aws_caller_identity" "current" {}
 
-data "aws_iam_policy_document" "deny_insecure_transport" {
+data "aws_iam_policy_document" "bucket" {
   statement {
     sid    = "DenyInsecureTransport"
     effect = "Deny"
@@ -71,11 +67,38 @@ data "aws_iam_policy_document" "deny_insecure_transport" {
       values   = ["false"]
     }
   }
+
+  statement {
+    sid    = "AllowS3LogDelivery"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logging.s3.amazonaws.com"]
+    }
+
+    actions   = ["s3:PutObject"]
+    resources = ["${aws_s3_bucket.this.arn}/logs/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "this" {
   bucket = aws_s3_bucket.this.id
-  policy = data.aws_iam_policy_document.deny_insecure_transport.json
+  policy = data.aws_iam_policy_document.bucket.json
 
   depends_on = [aws_s3_bucket_public_access_block.this]
+}
+
+resource "aws_s3_bucket_logging" "this" {
+  bucket        = aws_s3_bucket.this.id
+  target_bucket = aws_s3_bucket.this.id
+  target_prefix = "logs/"
+
+  depends_on = [aws_s3_bucket_policy.this]
 }

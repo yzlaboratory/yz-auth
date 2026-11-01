@@ -50,67 +50,76 @@ try {
 }
 
 async function executeCommand(): Promise<void> {
-  if (resource === 'tenants' && action === 'create') {
-    const tenant = await tenants.createTenant({
-      slug: required(values.slug, '--slug'),
-      name: required(values.name, '--name'),
-    })
-    print(tenant)
-    return
+  const commands: Record<string, () => Promise<void>> = {
+    'tenants create': createTenant,
+    'tenants list': listTenants,
+    'tenants disable': disableTenant,
+    'clients create': createClient,
+    'clients list': listClients,
+    'clients disable': disableClient,
+    'clients rotate-secret': rotateClientSecret,
   }
 
-  if (resource === 'tenants' && action === 'list') {
-    print(await tenants.listTenants())
-    return
+  const command = commands[`${resource} ${action}`]
+
+  if (!command) {
+    throw new Error('Expected db migrate, tenants create|list|disable, clients create|list|disable|rotate-secret, or secrets generate')
   }
 
-  if (resource === 'tenants' && action === 'disable') {
-    const disabled = await tenants.disableTenant(required(values.slug, '--slug'))
-    print({ disabled })
-    process.exitCode = disabled ? 0 : 1
-    return
-  }
+  await command()
+}
 
-  if (resource === 'clients' && action === 'create') {
-    const result = await tenants.createClient({
-      tenantSlug: required(values.tenant, '--tenant'),
-      name: required(values.name, '--name'),
-      redirectUris: values['redirect-uri'] ?? [],
-      postLogoutRedirectUris: values['post-logout-redirect-uri'] ?? [],
-      resourceUris: values['resource-uri'] ?? [],
-      isPublic: values.public ?? false,
-    })
-    print(result)
-    process.exitCode = result ? 0 : 1
-    return
-  }
+async function createTenant(): Promise<void> {
+  const tenant = await tenants.createTenant({
+    slug: required(values.slug, '--slug'),
+    name: required(values.name, '--name'),
+  })
+  print(tenant)
+}
 
-  if (resource === 'clients' && action === 'list') {
-    print(await tenants.listClients(required(values.tenant, '--tenant')))
-    return
-  }
+async function listTenants(): Promise<void> {
+  print(await tenants.listTenants())
+}
 
-  if (resource === 'clients' && action === 'disable') {
-    const disabled = await tenants.disableClient(
-      required(values.tenant, '--tenant'),
-      required(values['client-id'], '--client-id'),
-    )
-    print({ disabled })
-    process.exitCode = disabled ? 0 : 1
-    return
-  }
+async function disableTenant(): Promise<void> {
+  const disabled = await tenants.disableTenant(required(values.slug, '--slug'))
+  print({ disabled })
+  process.exitCode = disabled ? 0 : 1
+}
 
-  if (resource === 'clients' && action === 'rotate-secret') {
-    const clientSecret = await tenants.rotateClientSecret(
-      required(values.tenant, '--tenant'),
-      required(values['client-id'], '--client-id'),
-    )
-    print({ clientSecret })
-    process.exitCode = clientSecret ? 0 : 1
-    return
-  }
+async function createClient(): Promise<void> {
+  const result = await tenants.createClient({
+    tenantSlug: required(values.tenant, '--tenant'),
+    name: required(values.name, '--name'),
+    redirectUris: values['redirect-uri'] ?? [],
+    postLogoutRedirectUris: values['post-logout-redirect-uri'] ?? [],
+    resourceUris: values['resource-uri'] ?? [],
+    isPublic: values.public ?? false,
+  })
+  print(result)
+  process.exitCode = result ? 0 : 1
+}
 
-  throw new Error('Expected db migrate, tenants create|list|disable, clients create|list|disable|rotate-secret, or secrets generate')
+async function listClients(): Promise<void> {
+  print(await tenants.listClients(required(values.tenant, '--tenant')))
+}
+
+async function disableClient(): Promise<void> {
+  const disabled = await tenants.disableClient(
+    required(values.tenant, '--tenant'),
+    required(values['client-id'], '--client-id'),
+  )
+  print({ disabled })
+  process.exitCode = disabled ? 0 : 1
+}
+
+async function rotateClientSecret(): Promise<void> {
+  const clientSecret = await tenants.rotateClientSecret(
+    required(values.tenant, '--tenant'),
+    required(values['client-id'], '--client-id'),
+  )
+  print({ clientSecret })
+  process.exitCode = clientSecret ? 0 : 1
 }
 
 function print(value: unknown): void {

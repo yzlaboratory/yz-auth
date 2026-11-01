@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import type { AppConfig } from '../config.js'
 import { required } from '../required.js'
@@ -250,11 +250,11 @@ export function registerAccountRoutes(
 }
 
 function validationMessage(error: z.ZodError): string {
-  const paths = error.issues.flatMap((issue) => issue.path)
-  if (paths.includes('password')) {
+  const paths = new Set(error.issues.flatMap((issue) => issue.path))
+  if (paths.has('password')) {
     return 'Use a password of 12 to 128 characters.'
   }
-  if (paths.includes('email')) {
+  if (paths.has('email')) {
     return 'Enter a valid email address.'
   }
 

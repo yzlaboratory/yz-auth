@@ -109,17 +109,7 @@ export async function buildApp(
     registerInteractionRoutes(web, providers, accounts, tenants, config)
 
     web.setErrorHandler(async (error, _request, reply) => {
-      const frameworkStatus = error instanceof Error && 'statusCode' in error
-        ? error.statusCode
-        : undefined
-      const statusCode = error instanceof ClientError
-        ? error.statusCode
-        : error instanceof ZodError
-          ? 400
-          : typeof frameworkStatus === 'number'
-            && frameworkStatus >= 400 && frameworkStatus < 500
-            ? frameworkStatus
-            : 500
+      const statusCode = errorStatus(error)
       if (statusCode === 500) {
         web.log.error(error)
       }
@@ -159,4 +149,21 @@ export async function buildApp(
   })
 
   return { server, database, tenants, accounts }
+}
+
+function errorStatus(error: unknown): number {
+  if (error instanceof ClientError) {
+    return error.statusCode
+  }
+  if (error instanceof ZodError) {
+    return 400
+  }
+  if (error instanceof Error && 'statusCode' in error) {
+    const statusCode = error.statusCode
+    if (typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500) {
+      return statusCode
+    }
+  }
+
+  return 500
 }

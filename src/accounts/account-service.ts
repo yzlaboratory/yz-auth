@@ -121,7 +121,10 @@ export class AccountService {
     const normalizedEmail = normalizeEmail(email)
     const account = await this.findAccountByEmail(input.tenant.id, normalizedEmail)
 
-    if (!account || account.status !== 'active' || account.emailVerifiedAt) {
+    if (!account) {
+      return
+    }
+    if (account.status !== 'active' || account.emailVerifiedAt) {
       return
     }
 
@@ -252,7 +255,10 @@ export class AccountService {
     const email = emailSchema.parse(input.email)
     const account = await this.findAccountByEmail(input.tenant.id, normalizeEmail(email))
 
-    if (!account || account.status !== 'active' || !account.emailVerifiedAt) {
+    if (!account) {
+      return
+    }
+    if (account.status !== 'active' || !account.emailVerifiedAt) {
       return
     }
 

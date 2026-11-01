@@ -1,7 +1,6 @@
 import Provider, {
   errors,
   type ClientMetadata,
-  type Configuration,
 } from 'oidc-provider'
 import type { AccountService } from '../accounts/account-service.js'
 import type { AppConfig } from '../config.js'
@@ -33,7 +32,10 @@ export class OidcProviderManager {
 
   async getProvider(slug: string): Promise<Provider | null> {
     const tenant = await this.tenants.getTenantWithSigningKey(slug)
-    if (!tenant || tenant.status !== 'active') {
+    if (!tenant) {
+      return null
+    }
+    if (tenant.status !== 'active') {
       return null
     }
 
@@ -82,7 +84,10 @@ export class OidcProviderManager {
       },
       findAccount: async (_context, accountId) => {
         const account = await this.accounts.findAccount(tenant.id, accountId)
-        if (!account || account.status !== 'active' || !account.emailVerifiedAt) {
+        if (!account) {
+          return undefined
+        }
+        if (account.status !== 'active' || !account.emailVerifiedAt) {
           return undefined
         }
 

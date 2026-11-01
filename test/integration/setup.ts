@@ -85,7 +85,7 @@ export async function deliverNextEmail(context: IntegrationContext): Promise<voi
 }
 
 export function extractSecurityToken(textBody: string, path: 'verify' | 'reset-password'): string {
-  const match = textBody.match(new RegExp(`/${path}\\?token=([^&\\s]+)`))
+  const match = new RegExp(String.raw`/${path}\?token=([^&\s]+)`).exec(textBody)
   const token = match?.[1]
   if (!token) {
     throw new Error(`No ${path} token found in email`)

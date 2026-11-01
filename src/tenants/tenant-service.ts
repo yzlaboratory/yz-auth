@@ -171,7 +171,10 @@ export class TenantService {
     client.resourceUris.forEach(assertValidHttpsUri)
 
     const tenant = await this.getTenant(client.tenantSlug)
-    if (!tenant || tenant.status !== 'active') {
+    if (!tenant) {
+      return null
+    }
+    if (tenant.status !== 'active') {
       return null
     }
 

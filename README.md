@@ -69,7 +69,7 @@ npm run cli -- clients rotate-secret --tenant acme --client-id <client-id>
 On the VPS, invoke the same CLI through the application container, for example:
 
 ```sh
-docker compose exec yz-auth node dist/cli.js tenants list
+docker exec yz-auth-yz-auth-1 node dist/cli.js tenants list
 ```
 
 ## OIDC integration

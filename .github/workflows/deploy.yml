@@ -18,109 +18,17 @@ concurrency:
 jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      APP_NAME: yz-auth
-      IMAGE: ghcr.io/yzlaboratory/yz-auth
-      SHA_INPUT: ${{ github.event.workflow_run.head_sha || github.sha }}
-      REF_INPUT: ${{ github.event.workflow_run.head_sha || github.sha }}
-      COMPOSE_FILE: compose.yaml
-      BACKUP_SCRIPT: backup.sh
-      HEALTH_URL: https://auth.yzlaboratory.dev/health/ready
+    uses: yzlaboratory/yz-infra/.github/workflows/deploy.yml@main
+    with:
+      app_name: yz-auth
+      image: ghcr.io/yzlaboratory/yz-auth
+      sha: ${{ github.event.workflow_run.head_sha || github.sha }}
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      compose_file: compose.yaml
+      health_url: https://auth.yzlaboratory.dev/health/ready
+    secrets:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_USER: ${{ secrets.SSH_USER }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
       TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}
-      GHCR_TOKEN: ${{ github.token }}
-      GHCR_USER: ${{ github.actor }}
-
-    steps:
-      - name: Check out caller repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: ${{ env.REF_INPUT }}
-
-      - name: Resolve image reference
-        id: image
-        run: |
-          set -euo pipefail
-          tag="sha-${SHA_INPUT:0:7}"
-          if [[ ! $tag =~ ^[A-Za-z0-9._-]+$ ]]; then
-            echo "invalid tag: $tag" >&2
-            exit 1
-          fi
-          printf 'ref=%s:%s\n' "$IMAGE" "$tag" >> "$GITHUB_OUTPUT"
-
-      - name: Join tailnet
-        uses: tailscale/github-action@6cae46e2d796f265265cfcf628b72a32b4d7cade # v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Configure SSH
-        run: |
-          set -euo pipefail
-          install -d -m 0700 "$HOME/.ssh"
-          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
-          chmod 0600 "$HOME/.ssh/id_ed25519"
-
-          if [[ -n ${SSH_KNOWN_HOSTS:-} ]]; then
-            printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
-          else
-            ssh-keyscan -H "$SSH_HOST" >> "$HOME/.ssh/known_hosts"
-          fi
-          if [[ ! -s $HOME/.ssh/known_hosts ]]; then
-            echo "could not obtain a host key for $SSH_HOST" >&2
-            exit 1
-          fi
-          chmod 0600 "$HOME/.ssh/known_hosts"
-
-          {
-            printf 'Host target\n'
-            printf '  HostName %s\n' "$SSH_HOST"
-            printf '  User %s\n' "$SSH_USER"
-            printf '  Port 22\n'
-            printf '  IdentityFile %s\n' "$HOME/.ssh/id_ed25519"
-            printf '  IdentitiesOnly yes\n'
-            printf '  StrictHostKeyChecking yes\n'
-            printf '  UserKnownHostsFile %s\n' "$HOME/.ssh/known_hosts"
-          } > "$HOME/.ssh/config"
-          chmod 0600 "$HOME/.ssh/config"
-
-      - name: Deploy
-        env:
-          IMAGE_REF: ${{ steps.image.outputs.ref }}
-        run: |
-          set -euo pipefail
-          remote_dir="/srv/apps/${APP_NAME}"
-          ssh target "mkdir -p '$remote_dir'"
-          scp -q "$COMPOSE_FILE" "target:$remote_dir/compose.yaml"
-          if [[ -f $BACKUP_SCRIPT ]]; then
-            scp -q "$BACKUP_SCRIPT" "target:$remote_dir/backup.sh"
-            ssh target "chmod 0755 '$remote_dir/backup.sh'"
-          fi
-
-          remote_config="/tmp/yz-docker-${APP_NAME}-${GITHUB_RUN_ID}"
-          ssh target "umask 077 && rm -rf '$remote_config' && mkdir -p '$remote_config' && chmod 700 '$remote_config'"
-          printf '%s' "$GHCR_TOKEN" | ssh target "DOCKER_CONFIG='$remote_config' docker login ghcr.io -u '$GHCR_USER' --password-stdin"
-
-          ssh target "cd '$remote_dir' && DOCKER_CONFIG='$remote_config' IMAGE_REF='$IMAGE_REF' docker compose -p '$APP_NAME' pull"
-          ssh target "cd '$remote_dir' && DOCKER_CONFIG='$remote_config' IMAGE_REF='$IMAGE_REF' docker compose -p '$APP_NAME' up -d --remove-orphans --wait"
-          ssh target "rm -rf '$remote_config'" || true
-
-      - name: Check health
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 24); do
-            if curl -fsS --max-time 10 "$HEALTH_URL" >/dev/null; then
-              echo "healthy after ${attempt} attempt(s)"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "health check failed: $HEALTH_URL" >&2
-          exit 1

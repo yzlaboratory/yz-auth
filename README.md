@@ -12,7 +12,7 @@ yz-auth is a self-hosted, multi-tenant OpenID Connect authentication service for
 - PostgreSQL-backed OIDC state and transactional email outbox.
 - AWS SES delivery in production and Mailpit in development.
 - Terraform for SES, IAM, Porkbun DNS, and remote state.
-- Docker Compose deployment with Caddy and PostgreSQL.
+- Docker Compose deployment behind the shared Traefik proxy, with PostgreSQL.
 
 Architectural decisions and deferred scope are recorded in [`docs/adr/`](docs/adr/README.md).
 
@@ -111,17 +111,23 @@ TEST_DATABASE_URL=postgres://yz_auth:yz_auth@localhost:5432/yz_auth npm run test
 
 **The integration suite truncates its configured database. Never point `TEST_DATABASE_URL` at a database containing data you need.**
 
+## Container images
+
+Every successful CI run on `main` builds and publishes the application image to GitHub Container Registry as `ghcr.io/<owner>/yz-auth`, tagged `latest`, `main`, and `sha-<commit>`. Pull requests build the same image without pushing it. Set the `DOCKER_PLATFORMS` repository variable to change the target platforms; the default is `linux/amd64`.
+
 ## Production
 
 1. Provision and verify SES/DNS using [`infra/README.md`](infra/README.md). SES production access, AWS/Porkbun credentials, domain values, and the initial state-bucket bootstrap are operator tasks.
 2. Copy `.env.production.example` to `.env` on the VPS and replace every secret and domain value. Use the SES outputs from Terraform.
 3. Restrict SSH and ensure the VPS has current security updates. Back up `.env` and encryption keys securely; losing `KEY_ENCRYPTION_KEY` makes stored signing keys and client secrets unreadable.
-4. Start the services:
+4. Deploy with the `Deploy` GitHub Actions workflow. It calls the reusable workflow in `yz-infra`, pulls the pinned `sha-<7>` image from GHCR, and runs `docker compose up -d --remove-orphans --wait`.
+
+For a manual deploy, set the image explicitly:
 
 ```sh
-docker compose up -d --build
+IMAGE_REF=ghcr.io/yzlaboratory/yz-auth:sha-<7> docker compose up -d --remove-orphans
 ```
 
-Caddy terminates HTTPS for `DOMAIN`. Only ports 80 and 443 are public; PostgreSQL and yz-auth remain on the private Compose network. Migrations run as a one-shot Compose dependency before application startup. Use a URI-encoded password in `DATABASE_URL`.
+Traefik terminates HTTPS for `DOMAIN` through the external `proxy` network and Docker labels. Only Traefik publishes ports 80 and 443; PostgreSQL and yz-auth remain on the private Compose network. Migrations run as a one-shot Compose dependency before application startup. Use a URI-encoded password in `DATABASE_URL`.
 
-The Compose `backup` service writes daily PostgreSQL dumps to encrypted S3 storage using a separate write-only identity. Configure its outputs through `.env` and follow the restore-verification procedure in [`infra/README.md`](infra/README.md). A single VPS is deliberately a single point of failure.
+The repository's `backup.sh` writes a consistent PostgreSQL dump into the app directory; the host restic job includes it in the encrypted off-box backup. A single VPS is deliberately a single point of failure.

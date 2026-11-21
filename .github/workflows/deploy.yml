@@ -1,0 +1,34 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [Docker]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: deploy-yz-auth
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    uses: yzlaboratory/yz-infra/.github/workflows/deploy.yml@main
+    with:
+      app_name: yz-auth
+      image: ghcr.io/yzlaboratory/yz-auth
+      sha: ${{ github.event.workflow_run.head_sha || github.sha }}
+      ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      compose_file: compose.yaml
+      health_url: https://auth.yzlaboratory.dev/health/ready
+    secrets:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      TS_OAUTH_CLIENT_ID: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+      TS_OAUTH_SECRET: ${{ secrets.TS_OAUTH_SECRET }}

@@ -1,6 +1,8 @@
+name: yz-auth
+
 services:
   yz-auth:
-    build: .
+    image: ${IMAGE_REF:?set IMAGE_REF to a pinned yz-auth image}
     init: true
     restart: unless-stopped
     env_file: .env
@@ -13,6 +15,17 @@ services:
         condition: service_completed_successfully
     expose:
       - "3000"
+    networks:
+      - default
+      - proxy
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "proxy"
+      traefik.http.routers.yz-auth.rule: "Host(`${DOMAIN:?set DOMAIN in .env}`)"
+      traefik.http.routers.yz-auth.entrypoints: "websecure"
+      traefik.http.routers.yz-auth.tls.certresolver: "letsencrypt"
+      traefik.http.routers.yz-auth.middlewares: "security-headers@file,compress@file"
+      traefik.http.services.yz-auth.loadbalancer.server.port: "3000"
     read_only: true
     tmpfs:
       - /tmp
@@ -23,9 +36,14 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   migrate:
-    build: .
+    image: ${IMAGE_REF:?set IMAGE_REF to a pinned yz-auth image}
     restart: "no"
     env_file: .env
     environment:
@@ -35,6 +53,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - default
 
   postgres:
     image: postgres:17
@@ -51,43 +71,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - default
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
-  backup:
-    build:
-      context: .
-      dockerfile: Dockerfile.backup
-    restart: unless-stopped
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: yz_auth
-      POSTGRES_DB: yz_auth
-      AWS_REGION: ${AWS_REGION:-eu-central-1}
-      AWS_ACCESS_KEY_ID: ${BACKUP_AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${BACKUP_AWS_SECRET_ACCESS_KEY}
-      BACKUP_BUCKET: ${BACKUP_BUCKET}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-    mem_limit: 256m
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    environment:
-      DOMAIN: ${DOMAIN}
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    depends_on:
-      yz-auth:
-        condition: service_healthy
+networks:
+  default:
+  proxy:
+    external: true
 
 volumes:
   postgres-data:
-  caddy-data:
-  caddy-config:
